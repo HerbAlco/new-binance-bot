@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:new_binance_bot/theme/dark_theme.dart';
-import 'package:new_binance_bot/ui/trade_widget.dart';
+import 'package:new_binance_bot/ui/create_trade_widget.dart';
 
 void main() {
   runApp(const MyApp());
@@ -49,7 +49,7 @@ class LoginScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const TradeWidget()),
+                        builder: (context) => const CreateTradeWidget()),
                   );
                 },
                 child: const Text('Přihlásit se'),

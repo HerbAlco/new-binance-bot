@@ -13,7 +13,7 @@ Future<List<dynamic>> getOpenOrdersBySymbol(String symbol) async {
 
   final queryParams = Uri(queryParameters: params).query;
 
-  final signature = generateSignature(queryParams, timestamp);
+  final signature = generateSignature(queryParams);
 
   final url = Uri.parse('https://api.binance.com/api/v3/openOrders?$queryParams&signature=$signature');
   final response = await http.get(url, headers: {'X-MBX-APIKEY': AppStrings.apiKey});

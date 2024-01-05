@@ -7,7 +7,7 @@ import 'service_components/generate_signature.dart';
 Future<double> getCoinBalance(String coinSymbol) async {
   final timestamp = DateTime.now().millisecondsSinceEpoch;
   final queryString = 'timestamp=$timestamp';
-  final signature = generateSignature(queryString, timestamp);
+  final signature = generateSignature(queryString);
 
   final response = await http.get(
     Uri.parse('https://api.binance.com/api/v3/account?$queryString&signature=$signature'),
@@ -26,6 +26,7 @@ Future<double> getCoinBalance(String coinSymbol) async {
       }
     }
   }
+  //TODO: try/catch při špatné odpovědi serveru
   return 0.0;
 }
 

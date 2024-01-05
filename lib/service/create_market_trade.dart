@@ -4,7 +4,7 @@ import 'service_components/calculate_quantity.dart';
 import 'service_components/generate_signature.dart';
 import 'service_components/get_account_info.dart';
 
-Future<void> buyCryptoONMarket(
+Future<void> buyCryptoOnMarket(
     String symbol,
     String side,
     double amount,
@@ -23,7 +23,7 @@ Future<void> buyCryptoONMarket(
 
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final queryString = Uri(queryParameters: params).query;
-    final signature = generateSignature(queryString, timestamp);
+    final signature = generateSignature(queryString);
 
     await http.post(
       Uri.https('api.binance.com', '/api/v3/order'),
