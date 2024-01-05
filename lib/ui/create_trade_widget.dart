@@ -1,24 +1,23 @@
 import 'dart:async';
 
-import 'package:new_binance_bot/ui/price_stream_widget.dart';
 import '../components/app_strings.dart';
 import 'package:flutter/material.dart';
 
 import '../controllers/start_countdown.dart';
 import '../model/order_model.dart';
+import '../service/get_balance_account.dart';
 import '../service/start_order_system.dart';
 
 
-class TradeWidget extends StatefulWidget {
-  const TradeWidget({super.key});
+class CreateTradeWidget extends StatefulWidget {
+  const CreateTradeWidget({super.key});
   @override
-  State<TradeWidget> createState() => _TradeWidgetState();
+  State<CreateTradeWidget> createState() => _CreateTradeWidgetState();
 }
 
-class _TradeWidgetState extends State<TradeWidget> {
+class _CreateTradeWidgetState extends State<CreateTradeWidget> {
 
-  //symbol pro objednávku
-  TextEditingController symbolController = TextEditingController();
+
 
   //cena první objednávky
   TextEditingController amountController = TextEditingController();
@@ -38,13 +37,24 @@ class _TradeWidgetState extends State<TradeWidget> {
   int spreadRounds = 1;
   double amount = 0.0;
   int spreadTime = 2;
-
-  final List<Order> orders = List.empty();
+  late String firstCoinSymbol;
+  late String secondCoinSymbol;
+  late double firstCoinBalance = 0.0;
+  late double secondCoinBalance = 0.0;
+  final List<Order> orders = [];
+  late Order order;
 
   @override
   void initState() {
     super.initState();
-    symbolController.text = symbol;
+    initializeBalances();
+  }
+
+  Future<void> initializeBalances() async {
+    firstCoinSymbol = symbol.substring(0, symbol.indexOf('/'));
+    secondCoinSymbol = symbol.substring(symbol.indexOf('/') + 1, symbol.length);
+    firstCoinBalance = await getCoinBalance(firstCoinSymbol);
+    secondCoinBalance = await getCoinBalance(secondCoinSymbol);
   }
 
   @override
@@ -62,18 +72,17 @@ class _TradeWidgetState extends State<TradeWidget> {
                 buildAutocomplete(),
                 const SizedBox(height: 10),
                 buildBalanceContainers(),
-                const SizedBox(height: 10),
-                PriceStreamWidget(
-                  symbol: order.symbol.replaceAll('/', ''),
-                  upperLimit: order.upperLimit,
-                  lowerLimit: order.lowerLimit,
-                  priceAtStart: order.priceAtStart,
-                ),
+                // const SizedBox(height: 10),
+                // PriceStreamWidget(
+                //   symbol: order.symbol.replaceAll('/', ''),
+                //   upperLimit: order.upperLimit,
+                //   lowerLimit: order.lowerLimit,
+                //   priceAtStart: order.priceAtStart,
+                // ), TODO: předělat aby ukazoval aktuální cenu
                 const SizedBox(height: 10),
                 buildTextField(
                   controller: amountController,
                   labelText: 'Kolik USD chceš investovat: ',
-                  result: '(${(order.amount / order.wave).toStringAsFixed(2)})',
                   onSubmitted: (value) {
                     setState(() {
                       amount = double.tryParse(value) ?? 0.0;
@@ -89,7 +98,6 @@ class _TradeWidgetState extends State<TradeWidget> {
                 buildTextField(
                   controller: spreadRoundsController,
                   labelText: 'Kolikrát chceš rozdělit rozpětí: ',
-                  result: '(${order.wave})',
                   onSubmitted: (value) {
                     setState(() {
                       spreadRounds = int.tryParse(value) ?? 0;
@@ -105,8 +113,6 @@ class _TradeWidgetState extends State<TradeWidget> {
                 buildTextField(
                   controller: orderPriceRangeController,
                   labelText: 'Nastav % rozptylu: ',
-                  result:
-                  '(${((order.orderPriceRange / order.wave) * 100).toStringAsFixed(2)}%)',
                   onSubmitted: (value) {
                     setState(() {
                       orderPriceRange =
@@ -126,7 +132,6 @@ class _TradeWidgetState extends State<TradeWidget> {
                 buildTextField(
                   controller: setSpreadTime,
                   labelText: 'Nastav časovač: ',
-                  result: '(${order.currentDuration.inMinutes} min)',
                   onSubmitted: (value) {
                     setState(() {
                       spreadTime = int.tryParse(value) ?? 0;
@@ -138,8 +143,6 @@ class _TradeWidgetState extends State<TradeWidget> {
                     });
                   },
                 ),
-                const SizedBox(height: 10),
-                buildProgressBar(),
                 const SizedBox(height: 10),
                 buildButtonsRow(),
               ],
@@ -171,9 +174,9 @@ class _TradeWidgetState extends State<TradeWidget> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        buildBalanceContainer('Peněženka ${order.firstCoinSymbol}:', order.firstCoinBalance),
+        buildBalanceContainer('Peněženka $firstCoinSymbol:', firstCoinBalance),
         buildBalanceContainer(
-            'Peněženka ${order.secondCoinSymbol}:', order.secondCoinBalance),
+            'Peněženka $secondCoinSymbol:', secondCoinBalance),
       ],
     );
   }
@@ -198,7 +201,6 @@ class _TradeWidgetState extends State<TradeWidget> {
   Widget buildTextField({
     required TextEditingController controller,
     required String labelText,
-    required String result,
     void Function(String)? onSubmitted,
     void Function(String)? onChanged,
   }) {
@@ -221,7 +223,6 @@ class _TradeWidgetState extends State<TradeWidget> {
           ),
           labelText: labelText,
           labelStyle: const TextStyle(color: Colors.white),
-          suffixText: result,
           suffixStyle: const TextStyle(color: Colors.grey),
         ),
         cursorColor: Colors.white,
@@ -229,31 +230,32 @@ class _TradeWidgetState extends State<TradeWidget> {
     );
   }
 
-  Widget buildProgressBar() {
-    return Stack(
-      children: [
-        LinearProgressIndicator(
-          backgroundColor: Colors.white,
-          color: Colors.green,
-          borderRadius: BorderRadius.circular(15),
-          value: order.progressValue,
-          minHeight: 20,
-        ),
-        Positioned.fill(
-          child: Align(
-            alignment: Alignment.center,
-            child: Text(
-              order.remainingText,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  //TODO: předělat do view_order_data_widget
+  // Widget buildProgressBar() {
+  //   return Stack(
+  //     children: [
+  //       LinearProgressIndicator(
+  //         backgroundColor: Colors.white,
+  //         color: Colors.green,
+  //         borderRadius: BorderRadius.circular(15),
+  //         value: order.progressValue,
+  //         minHeight: 20,
+  //       ),
+  //       Positioned.fill(
+  //         child: Align(
+  //           alignment: Alignment.center,
+  //           child: Text(
+  //             order.remainingText,
+  //             style: const TextStyle(
+  //               color: Colors.black,
+  //               fontSize: 16,
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget buildButtonsRow() {
     return Row(
@@ -264,11 +266,9 @@ class _TradeWidgetState extends State<TradeWidget> {
             handleBuyButtonPressed();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: order.inBuying ? Colors.redAccent : Colors.green,
+            backgroundColor: Colors.green,
           ),
-          child: order.inBuying
-              ? const Text('Zavřít nákup')
-              : const Text('Otevřít nákup'),
+          child: const Text('Otevřít nákup'),
         ),
         ElevatedButton(
           onPressed: () {
@@ -295,14 +295,11 @@ class _TradeWidgetState extends State<TradeWidget> {
             Colors.red);
       } else if (spreadRounds == 0) {
         snackBar('Počet rozpětí je nízký, zadej víc než 0.', Colors.red);
-      } else {
-        order.inBuying = order.inBuying == true ? false : true;
-      }
-      if (order.inBuying) {
-        order.currentDuration = Duration(minutes: spreadTime);
-        order.spreadTimer = Timer(order.currentDuration, () {});
+      } else if (orders.isEmpty || !order.inBuying){
+        order = Order(symbol, amount, spreadRounds, orderPriceRange, spreadTime);
+        orders.add(order);
+        order.setOrderData();
         order.startPeriodicAction();
-        order = Order(symbolController.text, amount, spreadRounds, orderPriceRange, spreadTime);
         snackBar('Obchodování bylo zapnuto.', Colors.green);
       } else {
         order.periodicTimer?.cancel();

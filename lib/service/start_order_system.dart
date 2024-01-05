@@ -9,7 +9,7 @@ import 'get_open_order_by_symbol.dart';
 Future<void> startOrderSystem(
   String symbol,
   double amount,
-  double orderAtPrice,
+  double orderPriceRange,
   double priceAtStart,
 ) async {
   final clearSymbol = symbol.replaceAll('/', '');
@@ -17,13 +17,13 @@ Future<void> startOrderSystem(
   await cancelOpenOrders(clearSymbol);
   final currentPrice = await getCryptoPairPrice(clearSymbol);
 
-  final buyPrice = priceAtStart - (priceAtStart * orderAtPrice);
-  final sellPrice = priceAtStart + (priceAtStart * orderAtPrice);
+  final buyPrice = priceAtStart - (priceAtStart * orderPriceRange);
+  final sellPrice = priceAtStart + (priceAtStart * orderPriceRange);
 
   if (currentPrice < buyPrice){
-    await buyCryptoONMarket(symbol, 'BUY', amount);
+    await buyCryptoOnMarket(symbol, 'BUY', amount);
   } else if (currentPrice > sellPrice){
-    await buyCryptoONMarket(symbol, 'SELL', amount);
+    await buyCryptoOnMarket(symbol, 'SELL', amount);
   } else {
     await createLimitOrder(symbol, 'BUY', amount, buyPrice);
     await createLimitOrder(symbol, 'SELL', amount, sellPrice);
