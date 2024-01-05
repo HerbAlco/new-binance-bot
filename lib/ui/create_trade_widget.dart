@@ -7,18 +7,16 @@ import '../controllers/start_countdown.dart';
 import '../model/order_model.dart';
 import '../service/get_balance_account.dart';
 import '../service/start_order_system.dart';
-
+import 'view_order_data_widget.dart';
 
 class CreateTradeWidget extends StatefulWidget {
   const CreateTradeWidget({super.key});
+
   @override
   State<CreateTradeWidget> createState() => _CreateTradeWidgetState();
 }
 
 class _CreateTradeWidgetState extends State<CreateTradeWidget> {
-
-
-
   //cena první objednávky
   TextEditingController amountController = TextEditingController();
 
@@ -41,7 +39,7 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
   late String secondCoinSymbol;
   late double firstCoinBalance = 0.0;
   late double secondCoinBalance = 0.0;
-  final List<Order> orders = [];
+  static final List<Order> orders = [];
   late Order order;
 
   @override
@@ -72,13 +70,7 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
                 buildAutocomplete(),
                 const SizedBox(height: 10),
                 buildBalanceContainers(),
-                // const SizedBox(height: 10),
-                // PriceStreamWidget(
-                //   symbol: order.symbol.replaceAll('/', ''),
-                //   upperLimit: order.upperLimit,
-                //   lowerLimit: order.lowerLimit,
-                //   priceAtStart: order.priceAtStart,
-                // ), TODO: předělat aby ukazoval aktuální cenu
+                // TODO: dodělat aby ukazoval aktuální cenu
                 const SizedBox(height: 10),
                 buildTextField(
                   controller: amountController,
@@ -159,12 +151,13 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
       optionsBuilder: (TextEditingValue textValue) {
         return AppStrings.tradablePairs
             .where((String value) =>
-            value.toLowerCase().startsWith(textValue.text.toLowerCase()))
+                value.toLowerCase().startsWith(textValue.text.toLowerCase()))
             .toList();
       },
       onSelected: (String selectedValue) {
         setState(() {
           symbol = selectedValue;
+          initializeBalances();
         });
       },
     );
@@ -230,33 +223,6 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
     );
   }
 
-  //TODO: předělat do view_order_data_widget
-  // Widget buildProgressBar() {
-  //   return Stack(
-  //     children: [
-  //       LinearProgressIndicator(
-  //         backgroundColor: Colors.white,
-  //         color: Colors.green,
-  //         borderRadius: BorderRadius.circular(15),
-  //         value: order.progressValue,
-  //         minHeight: 20,
-  //       ),
-  //       Positioned.fill(
-  //         child: Align(
-  //           alignment: Alignment.center,
-  //           child: Text(
-  //             order.remainingText,
-  //             style: const TextStyle(
-  //               color: Colors.black,
-  //               fontSize: 16,
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
   Widget buildButtonsRow() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -264,6 +230,12 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
         ElevatedButton(
           onPressed: () {
             handleBuyButtonPressed();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ViewOrderDataWidget(orders: orders),
+              ),
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green,
@@ -272,17 +244,15 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
         ),
         ElevatedButton(
           onPressed: () {
-            setState(() {
-              order.periodicTimer?.cancel();
-              order.spreadTimer?.cancel();
-              order.countdownTimer?.cancel();
-              cancelOpenOrders(order.clearSymbol);
-              snackBar('Obchodování bylo ukončeno.', Colors.red);
-              order.setOrderData();
-            });
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ViewOrderDataWidget(orders: orders),
+              ),
+            );
           },
           style: ElevatedButton.styleFrom(),
-          child: const Text('Otevřený prodej'),
+          child: const Text('Obchodování'),
         ),
       ],
     );
@@ -295,19 +265,13 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
             Colors.red);
       } else if (spreadRounds == 0) {
         snackBar('Počet rozpětí je nízký, zadej víc než 0.', Colors.red);
-      } else if (orders.isEmpty || !order.inBuying){
-        order = Order(symbol, amount, spreadRounds, orderPriceRange, spreadTime);
+      } else {
+        order =
+            Order(symbol, amount, spreadRounds, orderPriceRange, spreadTime);
         orders.add(order);
         order.setOrderData();
         order.startPeriodicAction();
         snackBar('Obchodování bylo zapnuto.', Colors.green);
-      } else {
-        order.periodicTimer?.cancel();
-        order.spreadTimer?.cancel();
-        order.countdownTimer?.cancel();
-        cancelOpenOrders(order.clearSymbol);
-        snackBar('Obchodování bylo ukončeno.', Colors.red);
-        order.setOrderData();
       }
     });
   }

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:quiver/async.dart';
-import '../controllers/start_countdown.dart';
 import '../service/get_balance_account.dart';
 import '../service/get_limit_order.dart';
 import '../service/get_open_order_by_symbol.dart';
@@ -8,8 +7,6 @@ import '../service/get_pair_price.dart';
 import '../service/start_order_system.dart';
 
 class Order {
-
-  CountdownManager countdownManager = CountdownManager();
 
   String symbol, clearSymbol, firstCoinSymbol, secondCoinSymbol;
   double currentPrice = 0.0, firstCoinBalance = 0.0, secondCoinBalance = 0.0,
@@ -21,7 +18,6 @@ class Order {
   CountdownTimer? countdownTimer;
   double progressValue = 0.0;
   String remainingText = '';
-
 
   Order(this.symbol, this.amount, this.spreadRounds, this.orderPriceRange, this.spreadTime)
       : clearSymbol = symbol.replaceAll('/', ''),
@@ -136,19 +132,11 @@ class Order {
         countdownTimer?.cancel();
         wave = 1;
         priceAtStart = await getCryptoPairPrice(clearSymbol);
-        print(currentDuration);
-        print(pollingInterval);
-        print(currentPrice);
-        print(firstCoinBalance);
-        print(secondCoinBalance);
-        print(upperLimit);
-        print(lowerLimit);
-        print(inBuying);
         await startOrderSystem(symbol, amount, orderPriceRange, priceAtStart);
         startPeriodicAction();
         currentDuration = Duration(minutes: spreadTime);
         spreadTimer = Timer(currentDuration, () {});
-        countdownManager.startCountdown(currentDuration);
+        startCountdown(currentDuration);
         setOrderData();
       } else if (!spreadTimer!.isActive && spreadRounds > wave && periodicTimer!.isActive) {
         periodicTimer?.cancel();
@@ -159,9 +147,35 @@ class Order {
         startPeriodicAction();
         currentDuration = Duration(minutes: wave) + currentDuration;
         spreadTimer = Timer(currentDuration, () {});
-        countdownManager.startCountdown(currentDuration);
+        startCountdown(currentDuration);
         setOrderData();
       }
     });
   }
+
+  void startCountdown(Duration currentDuration) {
+
+    int countdownDuration = currentDuration.inSeconds;
+    const int updateInterval = 1;
+
+    countdownTimer = CountdownTimer(
+      Duration(seconds: countdownDuration),
+      const Duration(seconds: updateInterval),
+    );
+
+    countdownTimer!.listen((event) {
+      int remainingSeconds = event.remaining.inSeconds;
+
+      if (remainingSeconds >= 60) {
+        int remainingMinutes = remainingSeconds ~/ 60;
+        remainingSeconds %= 60;
+        remainingText = '$remainingMinutes m $remainingSeconds s';
+      } else {
+        remainingText = '$remainingSeconds s';
+      }
+
+      progressValue = event.remaining.inSeconds / countdownDuration;
+    });
+  }
+
 }

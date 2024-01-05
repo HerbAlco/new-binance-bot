@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -30,7 +29,6 @@ class _PriceStreamWidgetState extends State<PriceStreamWidget> {
   double currentPrice = 0.0;
   double currentUpperPrice = 0.0;
   double currentLowerPrice = 0.0;
-  late Timer updateTimer;
   int decimalPlacePrice = 3;
 
   @override
@@ -69,14 +67,9 @@ class _PriceStreamWidgetState extends State<PriceStreamWidget> {
     channel.sink.close();
   }
 
-  void _stopTimer() {
-    updateTimer.cancel();
-  }
-
   @override
   void dispose() {
     _disposeWebSocket();
-    _stopTimer();
     super.dispose();
   }
 

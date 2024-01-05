@@ -6,6 +6,7 @@ class CountdownManager {
   late double progressValue;
 
   void startCountdown(Duration currentDuration) {
+
     int countdownDuration = currentDuration.inSeconds;
     const int updateInterval = 1;
 
@@ -26,14 +27,9 @@ class CountdownManager {
       }
 
       progressValue = event.remaining.inSeconds / countdownDuration;
-      // Zde by bylo vhodné volat metodu, která aktualizuje stav widgetu
-      updateWidgetState();
     });
+    print(remainingText);
+    print(progressValue);
   }
 
-  // Metoda pro aktualizaci stavu widgetu
-  void updateWidgetState() {
-    // Volání setState nebo jiné metody na aktualizaci stavu widgetu
-    // Například: myWidget.setState(() {});
-  }
 }

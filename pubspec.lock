@@ -112,6 +112,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.2"
+  k_chart:
+    dependency: "direct main"
+    description:
+      name: k_chart
+      sha256: "059163563285cc001dc0257880f598774c63791155a7e0f3a37064dda89c9168"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.1"
   lints:
     dependency: transitive
     description:
@@ -241,10 +249,10 @@ packages:
     dependency: "direct main"
     description:
       name: web_socket_channel
-      sha256: d88238e5eac9a42bb43ca4e721edba3c08c6354d4a53063afaa568516217621b
+      sha256: cc1f6c632a248278a091fd7d9a68f624906830f7c1c5aa66503fae0804633e1c
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.0"
+    version: "2.4.2"
 sdks:
   dart: ">=3.2.2 <4.0.0"
   flutter: ">=1.10.0"
