@@ -1,12 +1,9 @@
 import 'dart:async';
-
-import '../components/app_strings.dart';
 import 'package:flutter/material.dart';
 
-import '../controllers/start_countdown.dart';
+import '../components/app_strings.dart';
 import '../model/order_model.dart';
 import '../service/get_balance_account.dart';
-import '../service/start_order_system.dart';
 import 'view_order_data_widget.dart';
 
 class CreateTradeWidget extends StatefulWidget {
@@ -29,7 +26,6 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
   //časovač po kterém se zúžení provede
   TextEditingController setSpreadTime = TextEditingController();
 
-  CountdownManager countdownManager = CountdownManager();
   String symbol = AppStrings.tradablePairs[0];
   double orderPriceRange = 1;
   int spreadRounds = 1;
@@ -244,12 +240,14 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
         ),
         ElevatedButton(
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ViewOrderDataWidget(orders: orders),
-              ),
-            );
+            if (orders.isNotEmpty) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ViewOrderDataWidget(orders: orders),
+                ),
+              );
+            }
           },
           style: ElevatedButton.styleFrom(),
           child: const Text('Obchodování'),

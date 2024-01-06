@@ -54,17 +54,19 @@ class _PriceStreamWidgetState extends State<PriceStreamWidget> {
 
     channel.stream.listen((data) {
       var jsonData = json.decode(data);
-      setState(() {
-        currentPrice = double.parse(jsonData['p']);
-        decimalPlacePrice = calculateDecimalPlacePrice(currentPrice);
-        currentUpperPrice = widget.upperLimit - currentPrice;
-        currentLowerPrice = currentPrice - widget.lowerLimit;
-      });
+      if (mounted) {
+        setState(() {
+          currentPrice = double.parse(jsonData['p']);
+          decimalPlacePrice = calculateDecimalPlacePrice(currentPrice);
+          currentUpperPrice = widget.upperLimit - currentPrice;
+          currentLowerPrice = currentPrice - widget.lowerLimit;
+        });
+      }
     });
   }
 
   void _disposeWebSocket() {
-    channel.sink.close();
+      channel.sink.close();
   }
 
   @override

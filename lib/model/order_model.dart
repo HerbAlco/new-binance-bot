@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:quiver/async.dart';
 import '../service/get_balance_account.dart';
 import '../service/get_limit_order.dart';
@@ -6,7 +7,7 @@ import '../service/get_open_order_by_symbol.dart';
 import '../service/get_pair_price.dart';
 import '../service/start_order_system.dart';
 
-class Order {
+class Order extends ChangeNotifier{
 
   String symbol, clearSymbol, firstCoinSymbol, secondCoinSymbol;
   double currentPrice = 0.0, firstCoinBalance = 0.0, secondCoinBalance = 0.0,
@@ -16,8 +17,17 @@ class Order {
   Timer? spreadTimer, periodicTimer;
   late Duration currentDuration, pollingInterval;
   CountdownTimer? countdownTimer;
-  double progressValue = 0.0;
-  String remainingText = '';
+  double _progressValue = 0.0;
+  String _remainingText = '';
+
+  double get progressValue => _progressValue;
+  String get remainingText => _remainingText;
+
+  void updateProgress(double value, String text) {
+    _progressValue = value;
+    _remainingText = text;
+    notifyListeners();
+  }
 
   Order(this.symbol, this.amount, this.spreadRounds, this.orderPriceRange, this.spreadTime)
       : clearSymbol = symbol.replaceAll('/', ''),
@@ -122,34 +132,29 @@ class Order {
   //     }
   //   });
   // }
-
   void startPeriodicAction() {
+    void restartOrder(int newWave) async {
+      periodicTimer?.cancel();
+      spreadTimer?.cancel();
+      countdownTimer?.cancel();
+      wave = newWave;
+      priceAtStart = await getCryptoPairPrice(clearSymbol);
+      await startOrderSystem(symbol, amount / wave, orderPriceRange / wave, priceAtStart);
+      startPeriodicAction();
+      currentDuration = Duration(minutes: spreadTime);
+      spreadTimer = Timer(currentDuration, () {});
+      startCountdown(currentDuration);
+      setOrderData();
+    }
+
     periodicTimer = Timer.periodic(pollingInterval, (timer1) async {
       List openOrders = await getOpenOrdersBySymbol(clearSymbol);
       if (openOrders.length != 2 && periodicTimer!.isActive) {
-        periodicTimer?.cancel();
-        spreadTimer?.cancel();
-        countdownTimer?.cancel();
-        wave = 1;
-        priceAtStart = await getCryptoPairPrice(clearSymbol);
-        await startOrderSystem(symbol, amount, orderPriceRange, priceAtStart);
-        startPeriodicAction();
-        currentDuration = Duration(minutes: spreadTime);
-        spreadTimer = Timer(currentDuration, () {});
-        startCountdown(currentDuration);
-        setOrderData();
+        restartOrder(1);
       } else if (!spreadTimer!.isActive && spreadRounds > wave && periodicTimer!.isActive) {
-        periodicTimer?.cancel();
-        spreadTimer?.cancel();
-        countdownTimer?.cancel();
-        wave++;
-        await startOrderSystem(symbol, amount / wave, orderPriceRange / wave, priceAtStart);
-        startPeriodicAction();
-        currentDuration = Duration(minutes: wave) + currentDuration;
-        spreadTimer = Timer(currentDuration, () {});
-        startCountdown(currentDuration);
-        setOrderData();
+        restartOrder(wave + 1);
       }
+      updateProgress(progressValue, remainingText);
     });
   }
 
@@ -169,13 +174,15 @@ class Order {
       if (remainingSeconds >= 60) {
         int remainingMinutes = remainingSeconds ~/ 60;
         remainingSeconds %= 60;
-        remainingText = '$remainingMinutes m $remainingSeconds s';
+        _remainingText = '$remainingMinutes m $remainingSeconds s';
       } else {
-        remainingText = '$remainingSeconds s';
+        _remainingText = '$remainingSeconds s';
       }
 
-      progressValue = event.remaining.inSeconds / countdownDuration;
+      _progressValue = event.remaining.inSeconds / countdownDuration;
+      updateProgress(progressValue, remainingText);
     });
+
   }
 
 }
