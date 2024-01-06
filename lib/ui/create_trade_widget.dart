@@ -63,7 +63,7 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                buildAutocomplete(),
+                buildDropdownButton(),
                 const SizedBox(height: 10),
                 buildBalanceContainers(),
                 // TODO: dodělat aby ukazoval aktuální cenu
@@ -141,21 +141,41 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
     );
   }
 
-  Widget buildAutocomplete() {
-    return Autocomplete<String>(
-      initialValue: TextEditingValue(text: symbol),
-      optionsBuilder: (TextEditingValue textValue) {
-        return AppStrings.tradablePairs
-            .where((String value) =>
-                value.toLowerCase().startsWith(textValue.text.toLowerCase()))
-            .toList();
-      },
-      onSelected: (String selectedValue) {
-        setState(() {
-          symbol = selectedValue;
-          initializeBalances();
-        });
-      },
+  Widget buildDropdownButton() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: DropdownButton<String>(
+        padding: const EdgeInsets.only(left: 15),
+        value: symbol,
+        icon: const Icon(Icons.arrow_drop_down),
+        iconSize: 36,
+        elevation: 16,
+        style: const TextStyle(color: Colors.black, fontSize: 18),
+        underline: Container(
+          height: 2,
+          color: Colors.transparent,
+        ),
+        onChanged: (String? selectedSymbol) {
+          if (selectedSymbol != null) {
+            setState(() {
+              symbol = selectedSymbol;
+              initializeBalances();
+            });
+          }
+        },
+        items: AppStrings.tradablePairs.map((String option) {
+          return DropdownMenuItem<String>(
+            value: option,
+            child: Text(option,
+                style: const TextStyle(color: Colors.white)),
+          );
+        }).toList(),
+        borderRadius: BorderRadius.circular(15),
+        dropdownColor: Colors.grey[900],
+      ),
     );
   }
 
@@ -234,9 +254,10 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
             );
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
+             backgroundColor: Colors.green
           ),
-          child: const Text('Otevřít nákup'),
+          child: const Text('Zahájit obchodování',
+              style: TextStyle(color: Colors.white)),
         ),
         ElevatedButton(
           onPressed: () {
@@ -247,9 +268,10 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
                   builder: (context) => ViewOrderDataWidget(orders: orders),
                 ),
               );
+            } else {
+              snackBar('Nemáš žádné obchody', Colors.red);
             }
           },
-          style: ElevatedButton.styleFrom(),
           child: const Text('Obchodování'),
         ),
       ],

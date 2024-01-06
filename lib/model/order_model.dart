@@ -7,17 +7,22 @@ import '../service/get_open_order_by_symbol.dart';
 import '../service/get_pair_price.dart';
 import '../service/start_order_system.dart';
 
-class Order extends ChangeNotifier{
-
+class Order extends ChangeNotifier {
   String symbol, clearSymbol, firstCoinSymbol, secondCoinSymbol;
-  double currentPrice = 0.0, firstCoinBalance = 0.0, secondCoinBalance = 0.0,
-      orderPriceRange, amount, upperLimit = 0.0, lowerLimit = 0.0, priceAtStart = 0.0;
+  double currentPrice = 0.0,
+      firstCoinBalance = 0.0,
+      secondCoinBalance = 0.0,
+      orderPriceRange,
+      amount,
+      upperLimit = 0.0,
+      lowerLimit = 0.0,
+      priceAtStart = 0.0;
   int spreadRounds, wave, spreadTime;
   bool inBuying;
   Timer? spreadTimer, periodicTimer;
   late Duration currentDuration, pollingInterval;
   CountdownTimer? countdownTimer;
-  double _progressValue = 0.0;
+  double _progressValue = 100.0;
   String _remainingText = '';
 
   double get progressValue => _progressValue;
@@ -29,7 +34,8 @@ class Order extends ChangeNotifier{
     notifyListeners();
   }
 
-  Order(this.symbol, this.amount, this.spreadRounds, this.orderPriceRange, this.spreadTime)
+  Order(this.symbol, this.amount, this.spreadRounds, this.orderPriceRange,
+      this.spreadTime)
       : clearSymbol = symbol.replaceAll('/', ''),
         firstCoinSymbol = symbol.substring(0, symbol.indexOf('/')),
         secondCoinSymbol =
@@ -132,16 +138,13 @@ class Order extends ChangeNotifier{
   //     }
   //   });
   // }
+
   void startPeriodicAction() {
-    void restartOrder(int newWave) async {
-      periodicTimer?.cancel();
+    void setRestart(int newWave, String symbol, double amount, double orderPriceRange, double priceAtStart, Duration currentDuration) async {
       spreadTimer?.cancel();
       countdownTimer?.cancel();
-      wave = newWave;
-      priceAtStart = await getCryptoPairPrice(clearSymbol);
-      await startOrderSystem(symbol, amount / wave, orderPriceRange / wave, priceAtStart);
+      await startOrderSystem(symbol, amount, orderPriceRange, priceAtStart);
       startPeriodicAction();
-      currentDuration = Duration(minutes: spreadTime);
       spreadTimer = Timer(currentDuration, () {});
       startCountdown(currentDuration);
       setOrderData();
@@ -150,16 +153,17 @@ class Order extends ChangeNotifier{
     periodicTimer = Timer.periodic(pollingInterval, (timer1) async {
       List openOrders = await getOpenOrdersBySymbol(clearSymbol);
       if (openOrders.length != 2 && periodicTimer!.isActive) {
-        restartOrder(1);
+        periodicTimer?.cancel();
+        priceAtStart = await getCryptoPairPrice(clearSymbol);
+        setRestart(1, symbol, amount, orderPriceRange, priceAtStart, Duration(minutes: spreadTime));
       } else if (!spreadTimer!.isActive && spreadRounds > wave && periodicTimer!.isActive) {
-        restartOrder(wave + 1);
+        periodicTimer?.cancel();
+        setRestart(wave++, symbol, amount / wave, orderPriceRange / wave, priceAtStart, Duration(minutes: wave) + currentDuration);
       }
-      updateProgress(progressValue, remainingText);
     });
   }
 
   void startCountdown(Duration currentDuration) {
-
     int countdownDuration = currentDuration.inSeconds;
     const int updateInterval = 1;
 
@@ -182,7 +186,5 @@ class Order extends ChangeNotifier{
       _progressValue = event.remaining.inSeconds / countdownDuration;
       updateProgress(progressValue, remainingText);
     });
-
   }
-
 }

@@ -21,9 +21,15 @@ Future<void> cancelOrder(String symbol, String orderId) async {
       .convert(utf8.encode(queryParams))
       .toString();
 
-  await http.delete(
+  final response = await http.delete(
     Uri.https('api.binance.com', '/api/v3/order',
         {...params, 'signature': signature}),
     headers: {'X-MBX-APIKEY': AppStrings.apiKey},
   );
+
+  if (response.statusCode == 200) {
+    print('objednávka smazáná');
+  } else {
+    print('objednávku se nepodařilo smazat');
+  }
 }

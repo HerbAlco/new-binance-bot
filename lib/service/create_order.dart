@@ -39,9 +39,9 @@ Future<void> createLimitOrder(
     );
 
     if (response.statusCode == 200) {
-      print('úspěch');
+      print('objednávka úspěšně vytvořená');
     } else {
-      print('neúspěch');
+      print('objednávku se nepodařilo vytvořit');
     }
   }
 }

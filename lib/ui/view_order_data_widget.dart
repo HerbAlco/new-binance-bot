@@ -53,7 +53,7 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  buildAutocomplete(),
+                  buildDropdownButton(),
                   const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -77,6 +77,12 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
                     children: [
                       ElevatedButton(
                         onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text('zpět k vytvoření obchodu'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
                           setState(() {
                             order.periodicTimer?.cancel();
                             order.spreadTimer?.cancel();
@@ -89,16 +95,12 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
                           Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor:  Colors.red,
                         ),
-                        child: const Text('Zavřít obchodování'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(),
-                        child: const Text('Vytvoření obchodu'),
+                        child: const Text(
+                          'Zavřít obchodování',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ],
                   ),
@@ -116,7 +118,7 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
     return Stack(
       children: [
         LinearProgressIndicator(
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.grey,
           color: Colors.green,
           borderRadius: BorderRadius.circular(15),
           value: progressValue,
@@ -138,24 +140,48 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
     );
   }
 
-  Widget buildAutocomplete() {
+  Widget buildDropdownButton() {
     if (widget.orders.isNotEmpty) {
-      return Autocomplete<Order>(
-        initialValue: TextEditingValue(text: widget.orders[0].symbol),
-        optionsBuilder: (TextEditingValue textValue) {
-          return (widget.orders)
-              .where((Order order) => order.symbol
-                  .toLowerCase()
-                  .contains(textValue.text.toLowerCase()))
-              .toList();
-        },
-        onSelected: (Order selectedOrder) {
-          setState(() {
-            order = selectedOrder;
-            initializeBalances();
-          });
-        },
-        displayStringForOption: (Order option) => option.symbol,
+      final uniqueOrders = widget.orders.toSet().toList();
+      if (!uniqueOrders.contains(order)) {
+        order = uniqueOrders.first;
+      }
+      return Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: DropdownButton<Order>(
+          padding: const EdgeInsets.only(left: 15),
+          value: order,
+          icon: const Icon(Icons.arrow_drop_down),
+          iconSize: 36,
+          elevation: 16,
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+          underline: Container(
+            height: 2,
+            color: Colors.transparent,
+          ),
+          onChanged: (Order? selectedOrder) {
+            setState(() {
+              if (selectedOrder != null) {
+                order = selectedOrder;
+                initializeBalances();
+              }
+            });
+          },
+          items: uniqueOrders.take(5).map((Order option) {
+            return DropdownMenuItem<Order>(
+              value: option,
+              child: Text(
+                option.symbol,
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          borderRadius: BorderRadius.circular(15),
+          dropdownColor: Colors.grey[900],
+        ),
       );
     } else {
       return const Text('Seznam objednávek je prázdný');
