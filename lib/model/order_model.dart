@@ -17,12 +17,12 @@ class Order extends ChangeNotifier {
       upperLimit = 0.0,
       lowerLimit = 0.0,
       priceAtStart = 0.0;
-  int spreadRounds, wave, spreadTime;
+  int spreadRounds, wave, spreadTime, orderOverBought = 0;
   bool inBuying;
   Timer? spreadTimer, periodicTimer;
   late Duration currentDuration, pollingInterval;
   CountdownTimer? countdownTimer;
-  double _progressValue = 100.0;
+  double _progressValue = 0.0;
   String _remainingText = '';
 
   double get progressValue => _progressValue;
@@ -140,26 +140,31 @@ class Order extends ChangeNotifier {
   // }
 
   void startPeriodicAction() {
-    void setRestart(int newWave, String symbol, double amount, double orderPriceRange, double priceAtStart, Duration currentDuration) async {
+    void setRestart(int newWave, String symbol, double amount, double orderPriceRange, double priceAtStart, Duration currentDuration, int orderOverBought) async {
       spreadTimer?.cancel();
       countdownTimer?.cancel();
-      await startOrderSystem(symbol, amount, orderPriceRange, priceAtStart);
+      await startOrderSystem(symbol, amount, orderPriceRange, priceAtStart, orderOverBought);
       startPeriodicAction();
       spreadTimer = Timer(currentDuration, () {});
       startCountdown(currentDuration);
-      setOrderData();
     }
 
     periodicTimer = Timer.periodic(pollingInterval, (timer1) async {
       List openOrders = await getOpenOrdersBySymbol(clearSymbol);
       if (openOrders.length != 2 && periodicTimer!.isActive) {
+        if (openOrders.length == 1){
+          Map<String, dynamic> openOrder = openOrders[0];
+          String side = openOrder['side'];
+          orderOverBought = side == 'SELL' ? ++orderOverBought : --orderOverBought;
+        }
         periodicTimer?.cancel();
         priceAtStart = await getCryptoPairPrice(clearSymbol);
-        setRestart(1, symbol, amount, orderPriceRange, priceAtStart, Duration(minutes: spreadTime));
+        setRestart(1, symbol, amount, orderPriceRange, priceAtStart, Duration(minutes: spreadTime), orderOverBought);
       } else if (!spreadTimer!.isActive && spreadRounds > wave && periodicTimer!.isActive) {
         periodicTimer?.cancel();
-        setRestart(wave++, symbol, amount / wave, orderPriceRange / wave, priceAtStart, Duration(minutes: wave) + currentDuration);
+        setRestart(wave++, symbol, amount / wave, orderPriceRange / wave, priceAtStart, Duration(minutes: wave) + currentDuration, orderOverBought);
       }
+      setOrderData();
     });
   }
 

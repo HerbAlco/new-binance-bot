@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../model/order_model.dart';
 import '../service/get_balance_account.dart';
+import '../service/get_pair_price.dart';
 import '../service/start_order_system.dart';
-import 'price_stream_widget.dart';
+import 'k_chart_widget.dart';
 
 class ViewOrderDataWidget extends StatefulWidget {
   final List<Order> orders;
@@ -22,21 +24,27 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
   double firstCoinBalance = 0.0;
   double secondCoinBalance = 0.0;
   late Order order;
+  late final StreamController<DateTime> _dateTimeController =
+      StreamController<DateTime>();
+  late Stream<DateTime> _dateTimeStream;
+
+  Future<void> initializeBalances() async {
+    firstCoinSymbol = order.symbol.substring(0, order.symbol.indexOf('/'));
+    secondCoinSymbol = order.symbol.substring(order.symbol.indexOf('/') + 1);
+    firstCoinBalance = await getCoinBalance(firstCoinSymbol);
+    secondCoinBalance = await getCoinBalance(secondCoinSymbol);
+  }
 
   @override
   void initState() {
     super.initState();
     order = widget.orders.first;
     initializeBalances();
-  }
 
-  Future<void> initializeBalances() async {
-    firstCoinSymbol = order.symbol
-        .substring(0, order.symbol.indexOf('/'));
-    secondCoinSymbol = order.symbol
-        .substring(order.symbol.indexOf('/') + 1);
-    firstCoinBalance = await getCoinBalance(firstCoinSymbol);
-    secondCoinBalance = await getCoinBalance(secondCoinSymbol);
+    _dateTimeStream = _dateTimeController.stream;
+    _dateTimeController.addStream(
+      Stream.periodic(const Duration(seconds: 1), (i) => DateTime.now()),
+    );
   }
 
   @override
@@ -47,67 +55,98 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
         appBar: AppBar(title: const Text('Trade Bot')),
         body: ChangeNotifierProvider.value(
           value: order,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  buildDropdownButton(),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Builder(
+            builder: (context) {
+              Order currentOrder = Provider.of<Order>(context);
+              return SingleChildScrollView(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      buildBalanceContainer('Peněženka $firstCoinSymbol:',
-                          order.firstCoinBalance),
-                      buildBalanceContainer('Peněženka $secondCoinSymbol:',
-                          order.secondCoinBalance),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Column(
+                            children: [
+                              buildDropdownButton(),
+                              Text(
+                                'Kurz páru:  ${currentOrder.currentPrice.toString()}',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: currentOrder.currentPrice > currentOrder.priceAtStart
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                              ),
+                              StreamBuilder<DateTime>(
+                                stream: _dateTimeStream,
+                                builder: (context, snapshot) {
+                                  // Show the current date and time
+                                  if (snapshot.hasData) {
+                                    return Text(
+                                      DateFormat('dd.MM.yyyy HH:mm:ss')
+                                          .format(snapshot.data!),
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    );
+                                  } else {
+                                    return const Text('Loading...');
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                order.periodicTimer?.cancel();
+                                order.spreadTimer?.cancel();
+                                order.countdownTimer?.cancel();
+                                cancelOpenOrders(order.clearSymbol);
+                                order.inBuying = false;
+                                snackBar(
+                                    'Obchodování bylo ukončeno.', Colors.red);
+                                widget.orders.remove(order);
+                              });
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              shape: const CircleBorder(),
+                            ),
+                            child: const Icon(
+                              Icons.stop,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          )
+                        ],
+                      ),
+                      KChart(),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text('zpět k vytvoření obchodu'),
+                          ),
+                        ],
+                      ),
+                      buildProgressBar(currentOrder.progressValue,
+                          currentOrder.remainingText),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  PriceStreamWidget(
-                    symbol: order.symbol.replaceAll('/', ''),
-                    upperLimit: order.upperLimit,
-                    lowerLimit: order.lowerLimit,
-                    priceAtStart: order.priceAtStart,
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Text('zpět k vytvoření obchodu'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            order.periodicTimer?.cancel();
-                            order.spreadTimer?.cancel();
-                            order.countdownTimer?.cancel();
-                            cancelOpenOrders(order.clearSymbol);
-                            order.inBuying = false;
-                            snackBar('Obchodování bylo ukončeno.', Colors.red);
-                            widget.orders.remove(order);
-                          });
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:  Colors.red,
-                        ),
-                        child: const Text(
-                          'Zavřít obchodování',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                  buildProgressBar(order.progressValue, order.remainingText),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -147,6 +186,7 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
         order = uniqueOrders.first;
       }
       return Container(
+        height: 30,
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey),
           borderRadius: BorderRadius.circular(15),
@@ -155,9 +195,9 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
           padding: const EdgeInsets.only(left: 15),
           value: order,
           icon: const Icon(Icons.arrow_drop_down),
-          iconSize: 36,
-          elevation: 16,
-          style: const TextStyle(color: Colors.white, fontSize: 18),
+          iconSize: 30,
+          elevation: 14,
+          style: const TextStyle(color: Colors.white, fontSize: 15),
           underline: Container(
             height: 2,
             color: Colors.transparent,

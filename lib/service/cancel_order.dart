@@ -28,7 +28,7 @@ Future<void> cancelOrder(String symbol, String orderId) async {
   );
 
   if (response.statusCode == 200) {
-    print('objednávka smazáná');
+    print('objednávka smazána');
   } else {
     print('objednávku se nepodařilo smazat');
   }

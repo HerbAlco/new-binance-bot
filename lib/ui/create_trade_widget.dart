@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:new_binance_bot/service/get_pair_price.dart';
+import 'package:new_binance_bot/ui/k_chart_widget.dart';
 
 import '../components/app_strings.dart';
 import '../model/order_model.dart';
@@ -33,10 +36,14 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
   int spreadTime = 2;
   late String firstCoinSymbol;
   late String secondCoinSymbol;
-  late double firstCoinBalance = 0.0;
-  late double secondCoinBalance = 0.0;
+  double firstCoinBalance = 0.0;
+  double secondCoinBalance = 0.0;
+  double currentPrice = 0.0;
   static final List<Order> orders = [];
   late Order order;
+  late final StreamController<DateTime> _dateTimeController =
+  StreamController<DateTime>();
+  late Stream<DateTime> _dateTimeStream;
 
   @override
   void initState() {
@@ -45,10 +52,15 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
   }
 
   Future<void> initializeBalances() async {
+    _dateTimeStream = _dateTimeController.stream;
+    _dateTimeController.addStream(
+      Stream.periodic(const Duration(seconds: 1), (i) => DateTime.now()),
+    );
     firstCoinSymbol = symbol.substring(0, symbol.indexOf('/'));
     secondCoinSymbol = symbol.substring(symbol.indexOf('/') + 1, symbol.length);
     firstCoinBalance = await getCoinBalance(firstCoinSymbol);
     secondCoinBalance = await getCoinBalance(secondCoinSymbol);
+    currentPrice = await getCryptoPairPrice(symbol.replaceAll('/', ''));
   }
 
   @override
@@ -63,7 +75,62 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                buildDropdownButton(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Column(
+                      children: [
+                        buildDropdownButton(),
+                        Text(
+                          'Kurz páru:  ${currentPrice.toString()}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        StreamBuilder<DateTime>(
+                          stream: _dateTimeStream,
+                          builder: (context, snapshot) {
+                            // Show the current date and time
+                            if (snapshot.hasData) {
+                              return Text(
+                                DateFormat('dd.MM.yyyy HH:mm:ss')
+                                    .format(snapshot.data!),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            } else {
+                              return const Text('Loading...');
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        handleBuyButtonPressed();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ViewOrderDataWidget(orders: orders),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: const CircleBorder(),
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                  ],
+                ),
+                KChart(),
                 const SizedBox(height: 10),
                 buildBalanceContainers(),
                 // TODO: dodělat aby ukazoval aktuální cenu
@@ -143,6 +210,7 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
 
   Widget buildDropdownButton() {
     return Container(
+      height: 30,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey),
         borderRadius: BorderRadius.circular(15),
@@ -151,9 +219,9 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
         padding: const EdgeInsets.only(left: 15),
         value: symbol,
         icon: const Icon(Icons.arrow_drop_down),
-        iconSize: 36,
-        elevation: 16,
-        style: const TextStyle(color: Colors.black, fontSize: 18),
+        iconSize: 30,
+        elevation: 14,
+        style: const TextStyle(color: Colors.black, fontSize: 15),
         underline: Container(
           height: 2,
           color: Colors.transparent,
@@ -169,8 +237,7 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
         items: AppStrings.tradablePairs.map((String option) {
           return DropdownMenuItem<String>(
             value: option,
-            child: Text(option,
-                style: const TextStyle(color: Colors.white)),
+            child: Text(option, style: const TextStyle(color: Colors.white)),
           );
         }).toList(),
         borderRadius: BorderRadius.circular(15),
@@ -240,42 +307,21 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
   }
 
   Widget buildButtonsRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        ElevatedButton(
-          onPressed: () {
-            handleBuyButtonPressed();
+    return ElevatedButton(
+        onPressed: () {
+          if (orders.isNotEmpty) {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => ViewOrderDataWidget(orders: orders),
               ),
             );
-          },
-          style: ElevatedButton.styleFrom(
-             backgroundColor: Colors.green
-          ),
-          child: const Text('Zahájit obchodování',
-              style: TextStyle(color: Colors.white)),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            if (orders.isNotEmpty) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ViewOrderDataWidget(orders: orders),
-                ),
-              );
-            } else {
-              snackBar('Nemáš žádné obchody', Colors.red);
-            }
-          },
-          child: const Text('Obchodování'),
-        ),
-      ],
-    );
+          } else {
+            snackBar('Nemáš žádné obchody', Colors.red);
+          }
+        },
+        child: const Text('Obchodování'),
+      );
   }
 
   void handleBuyButtonPressed() {

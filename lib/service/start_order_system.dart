@@ -11,6 +11,7 @@ Future<void> startOrderSystem(
   double amount,
   double orderPriceRange,
   double priceAtStart,
+  int orderCondition,
 ) async {
   final clearSymbol = symbol.replaceAll('/', '');
 
@@ -20,15 +21,20 @@ Future<void> startOrderSystem(
   final buyPrice = priceAtStart - (priceAtStart * orderPriceRange);
   final sellPrice = priceAtStart + (priceAtStart * orderPriceRange);
 
-  if (currentPrice < buyPrice){
+  if (currentPrice < buyPrice) {
     await buyCryptoOnMarket(symbol, 'BUY', amount);
-  } else if (currentPrice > sellPrice){
+  } else if (currentPrice > sellPrice) {
+    if (orderCondition <= 0){
+      amount += amount * orderPriceRange * 100;
+    }
     await buyCryptoOnMarket(symbol, 'SELL', amount);
   } else {
     await createLimitOrder(symbol, 'BUY', amount, buyPrice);
+    if (orderCondition <= 0){
+      amount += amount * orderPriceRange * 100;
+    }
     await createLimitOrder(symbol, 'SELL', amount, sellPrice);
   }
-
 }
 
 Future<void> cancelOpenOrders(String clearSymbol) async {
