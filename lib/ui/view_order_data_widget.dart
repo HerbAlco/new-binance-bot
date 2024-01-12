@@ -126,7 +126,7 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
                           )
                         ],
                       ),
-                      KChart(),
+                      const KChart(),
                       const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
