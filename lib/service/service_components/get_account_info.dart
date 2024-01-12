@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../components/app_strings.dart';
 
 Future<Map<String, dynamic>?> getAccountInfo() async {
-  final timestamp = DateTime.now().millisecondsSinceEpoch;
+  final timestamp = DateTime.now().millisecondsSinceEpoch - 1000;
   final queryString = 'timestamp=$timestamp';
 
   final signature = Hmac(sha256, utf8.encode(AppStrings.secretKey))

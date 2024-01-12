@@ -7,7 +7,7 @@ import '../components/app_strings.dart';
 
 
 Future<void> cancelOrder(String symbol, String orderId) async {
-  final timestamp = DateTime.now().millisecondsSinceEpoch;
+  final timestamp = DateTime.now().millisecondsSinceEpoch - 1000;
 
   final params = {
     'symbol': symbol,

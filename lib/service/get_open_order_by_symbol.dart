@@ -4,7 +4,7 @@ import 'package:new_binance_bot/components/app_strings.dart';
 import 'service_components/generate_signature.dart';
 
 Future<List<dynamic>> getOpenOrdersBySymbol(String symbol) async {
-  final timestamp = DateTime.now().millisecondsSinceEpoch;
+  final timestamp = DateTime.now().millisecondsSinceEpoch - 1000;
 
   final params = {
     'symbol': symbol,

@@ -21,7 +21,7 @@ Future<void> buyCryptoOnMarket(
       'quantity': quantity.toStringAsFixed(4),
     };
 
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final timestamp = DateTime.now().millisecondsSinceEpoch - 1000;
     final queryString = Uri(queryParameters: params).query;
     final signature = generateSignature(queryString);
 

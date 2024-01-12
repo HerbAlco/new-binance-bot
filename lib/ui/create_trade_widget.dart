@@ -48,14 +48,14 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
   @override
   void initState() {
     super.initState();
-    initializeBalances();
-  }
-
-  Future<void> initializeBalances() async {
     _dateTimeStream = _dateTimeController.stream;
     _dateTimeController.addStream(
       Stream.periodic(const Duration(seconds: 1), (i) => DateTime.now()),
     );
+    initializeBalances();
+  }
+
+  Future<void> initializeBalances() async {
     firstCoinSymbol = symbol.substring(0, symbol.indexOf('/'));
     secondCoinSymbol = symbol.substring(symbol.indexOf('/') + 1, symbol.length);
     firstCoinBalance = await getCoinBalance(firstCoinSymbol);
@@ -130,7 +130,7 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
                     ),
                   ],
                 ),
-                KChart(),
+                const KChart(),
                 const SizedBox(height: 10),
                 buildBalanceContainers(),
                 // TODO: dodělat aby ukazoval aktuální cenu

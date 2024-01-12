@@ -17,13 +17,14 @@ class Order extends ChangeNotifier {
       upperLimit = 0.0,
       lowerLimit = 0.0,
       priceAtStart = 0.0;
-  int spreadRounds, wave, spreadTime, orderOverBought = 0;
+  int spreadRounds, wave, spreadTime;
   bool inBuying;
   Timer? spreadTimer, periodicTimer;
   late Duration currentDuration, pollingInterval;
   CountdownTimer? countdownTimer;
   double _progressValue = 0.0;
   String _remainingText = '';
+  List<int> ordersID = [];
 
   double get progressValue => _progressValue;
   String get remainingText => _remainingText;
@@ -61,108 +62,94 @@ class Order extends ChangeNotifier {
   // void startPeriodicAction() {
   //   periodicTimer = Timer.periodic(pollingInterval, (timer1) async {
   //     List openOrders = await getOpenOrdersBySymbol(clearSymbol);
-  //     // double firstCoinBalanceUSDT = await getCryptoPairPrice('${firstCoinSymbol}USDT') * firstCoinBalance;
-  //     // double secondCoinBalanceUSDT = await getCryptoPairPrice('${secondCoinSymbol}USDT') * secondCoinBalance;
-  //     // if (openOrders.isEmpty &&
-  //     //     periodicTimer!.isActive &&
-  //     //     (firstCoinBalanceUSDT < amount || secondCoinBalanceUSDT < amount)) {
-  //     //   if (firstCoinBalanceUSDT < amount) {
-  //     //     periodicTimer?.cancel();
-  //     //     spreadTimer?.cancel();
-  //     //     countdownTimer?.cancel();
-  //     //     wave = 1;
-  //     //     priceAtStart = await getCryptoPairPrice(clearSymbol);
-  //     //     await startOpenOneOrder(symbol, 'BUY', amount, orderPriceRange, priceAtStart); //TODO: předělat na objednavku jednoho obchodu
-  //     //     snackBar('Objednávka úspěšně vytvořena', Colors.green);
-  //     //     startPeriodicAction();
-  //     //     currentDuration = Duration(minutes: spreadTime);
-  //     //     spreadTimer = Timer(currentDuration, () {});
-  //     //     startCountdown();
-  //     //     fetchData();
-  //     //   } else {
-  //     //     periodicTimer?.cancel();
-  //     //     spreadTimer?.cancel();
-  //     //     _countdownTimer?.cancel();
-  //     //     wave = 1;
-  //     //     priceAtStart = await getCryptoPairPrice(clearSymbol);
-  //     //     await startOpenOneOrder(symbol, 'SELL', amount, orderPriceRange, priceAtStart); //TODO: předělat na objednavku jednoho obchodu
-  //     //     snackBar('Objednávka úspěšně vytvořena', Colors.green);
-  //     //     startPeriodicAction();
-  //     //     currentDuration = Duration(minutes: spreadTime);
-  //     //     spreadTimer = Timer(currentDuration, () {});
-  //     //     startCountdown();
-  //     //     fetchData();
-  //     //   }
-  //     // } else if (openOrders.length == 1 &&
-  //     //     !spreadTimer!.isActive &&
-  //     //     spreadRounds > wave &&
-  //     //     periodicTimer!.isActive &&
-  //     //     (firstCoinBalanceUSDT < amount / (wave + 1) || secondCoinBalanceUSDT < amount / (wave + 1))) {
-  //     //   if (firstCoinBalanceUSDT < amount / (wave + 1)) {
-  //     //     print(3);
-  //     //   } else {
-  //     //     print(firstCoinBalanceUSDT);
-  //     //     print(secondCoinBalanceUSDT);
-  //     //     print(amount / (wave + 1));
-  //     //
-  //     //   }
-  //     // } else
-  //       if (openOrders.length != 2 && periodicTimer!.isActive /*&& (firstCoinBalanceUSDT > amount && secondCoinBalanceUSDT > amount)*/) {
-  //       periodicTimer?.cancel();
-  //       spreadTimer?.cancel();
-  //       countdownTimer?.cancel();
-  //       wave = 1;
-  //       priceAtStart = await getCryptoPairPrice(clearSymbol);
-  //       await startOrderSystem(symbol, amount, orderPriceRange, priceAtStart);
-  //       // snackBar('Objednávka úspěšně vytvořena', Colors.green); //TODO: předělat aby vracel true když bude objednávka ok nebo něco na ten styl a ukázal upozornění
-  //       startPeriodicAction();
-  //       currentDuration = Duration(minutes: spreadTime);
-  //       spreadTimer = Timer(currentDuration, () {});
-  //       countdownManager.startCountdown(currentDuration);
-  //       setOrderData();
-  //     } else if (!spreadTimer!.isActive &&
+  //     double firstCoinBalanceUSDT = await getCryptoPairPrice('${firstCoinSymbol}USDT') * firstCoinBalance;
+  //     double secondCoinBalanceUSDT = await getCryptoPairPrice('${secondCoinSymbol}USDT') * secondCoinBalance;
+  //     if (openOrders.isEmpty &&
+  //         periodicTimer!.isActive &&
+  //         (firstCoinBalanceUSDT < amount || secondCoinBalanceUSDT < amount)) {
+  //       if (firstCoinBalanceUSDT < amount) {
+  //         periodicTimer?.cancel();
+  //         spreadTimer?.cancel();
+  //         countdownTimer?.cancel();
+  //         wave = 1;
+  //         priceAtStart = await getCryptoPairPrice(clearSymbol);
+  //         await startOpenOneOrder(symbol, 'BUY', amount, orderPriceRange, priceAtStart); //TODO: předělat na objednavku jednoho obchodu
+  //         snackBar('Objednávka úspěšně vytvořena', Colors.green);
+  //         startPeriodicAction();
+  //         currentDuration = Duration(minutes: spreadTime);
+  //         spreadTimer = Timer(currentDuration, () {});
+  //         startCountdown();
+  //         fetchData();
+  //       } else {
+  //         periodicTimer?.cancel();
+  //         spreadTimer?.cancel();
+  //         _countdownTimer?.cancel();
+  //         wave = 1;
+  //         priceAtStart = await getCryptoPairPrice(clearSymbol);
+  //         await startOpenOneOrder(symbol, 'SELL', amount, orderPriceRange, priceAtStart); //TODO: předělat na objednavku jednoho obchodu
+  //         snackBar('Objednávka úspěšně vytvořena', Colors.green);
+  //         startPeriodicAction();
+  //         currentDuration = Duration(minutes: spreadTime);
+  //         spreadTimer = Timer(currentDuration, () {});
+  //         startCountdown();
+  //         fetchData();
+  //       }
+  //     } else if (openOrders.length == 1 &&
+  //         !spreadTimer!.isActive &&
   //         spreadRounds > wave &&
-  //         periodicTimer!.isActive /*&& (firstCoinBalanceUSDT > amount / wave && secondCoinBalanceUSDT > amount / wave)*/) {
-  //       periodicTimer?.cancel();
-  //       spreadTimer?.cancel();
-  //       countdownTimer?.cancel();
-  //       wave++;
-  //       await startOrderSystem(
-  //           symbol, amount / wave, orderPriceRange / wave, priceAtStart);
-  //       // snackBar('Objednávka č.$wave úspěšně vytvořena', Colors.green); //TODO: předělat aby vracel true když bude objednávka ok nebo něco na ten styl a ukázal upozornění
-  //       startPeriodicAction();
-  //       currentDuration = Duration(minutes: wave) + currentDuration;
-  //       spreadTimer = Timer(currentDuration, () {});
-  //       countdownManager.startCountdown(currentDuration);
-  //       setOrderData();
-  //     }
+  //         periodicTimer!.isActive &&
+  //         (firstCoinBalanceUSDT < amount / (wave + 1) || secondCoinBalanceUSDT < amount / (wave + 1))) {
+  //       if (firstCoinBalanceUSDT < amount / (wave + 1)) {
+  //         print(3);
+  //       } else {
+  //         print(firstCoinBalanceUSDT);
+  //         print(secondCoinBalanceUSDT);
+  //         print(amount / (wave + 1));
+  //
+  //       }
+  //     } else
   //   });
   // }
 
   void startPeriodicAction() {
-    void setRestart(int newWave, String symbol, double amount, double orderPriceRange, double priceAtStart, Duration currentDuration, int orderOverBought) async {
+    void setRestart(int newWave, String symbol, double amount,
+        double orderPriceRange, double priceAtStart, Duration currentDuration) async {
+
       spreadTimer?.cancel();
       countdownTimer?.cancel();
-      await startOrderSystem(symbol, amount, orderPriceRange, priceAtStart, orderOverBought);
+      await startOrderSystem(
+          symbol, amount, orderPriceRange, priceAtStart, ordersID);
       startPeriodicAction();
       spreadTimer = Timer(currentDuration, () {});
       startCountdown(currentDuration);
     }
 
+
+
     periodicTimer = Timer.periodic(pollingInterval, (timer1) async {
       List openOrders = await getOpenOrdersBySymbol(clearSymbol);
-      if (openOrders.length != 2 && periodicTimer!.isActive) {
-        if (openOrders.length == 1){
-          Map<String, dynamic> openOrder = openOrders[0];
-          String side = openOrder['side'];
-          orderOverBought = side == 'SELL' ? ++orderOverBought : --orderOverBought;
+      bool matchingOrder = false;
+      for (var orderID in ordersID) {
+        for (var order in openOrders){
+          if (order['orderId'] == orderID){
+            matchingOrder = true;
+            break;
+          } else {
+            matchingOrder == false;
+          }
         }
+      }
+      if (!matchingOrder && periodicTimer!.isActive) {
         periodicTimer?.cancel();
         priceAtStart = await getCryptoPairPrice(clearSymbol);
-        setRestart(1, symbol, amount, orderPriceRange, priceAtStart, Duration(minutes: spreadTime), orderOverBought);
-      } else if (!spreadTimer!.isActive && spreadRounds > wave && periodicTimer!.isActive) {
+        setRestart(1, symbol, amount, orderPriceRange, priceAtStart,
+            Duration(minutes: spreadTime));
+      } else if (!spreadTimer!.isActive &&
+          spreadRounds > wave &&
+          periodicTimer!.isActive) {
         periodicTimer?.cancel();
-        setRestart(wave++, symbol, amount / wave, orderPriceRange / wave, priceAtStart, Duration(minutes: wave) + currentDuration, orderOverBought);
+        setRestart(wave++, symbol, amount / wave, orderPriceRange / wave,
+            priceAtStart, Duration(minutes: wave) + currentDuration);
       }
       setOrderData();
     });

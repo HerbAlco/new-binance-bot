@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../model/order_model.dart';
 import '../service/get_balance_account.dart';
-import '../service/get_pair_price.dart';
 import '../service/start_order_system.dart';
 import 'k_chart_widget.dart';
 
@@ -107,7 +106,7 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
                                 order.periodicTimer?.cancel();
                                 order.spreadTimer?.cancel();
                                 order.countdownTimer?.cancel();
-                                cancelOpenOrders(order.clearSymbol);
+                                cancelOpenOrders(order.clearSymbol, order.ordersID);
                                 order.inBuying = false;
                                 snackBar(
                                     'Obchodování bylo ukončeno.', Colors.red);

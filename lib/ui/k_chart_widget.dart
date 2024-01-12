@@ -38,19 +38,19 @@ class _KChartState extends State<KChart> {
   void initState() {
     super.initState();
     getData('1day');
-    rootBundle.loadString('assets/depth.json').then((result) {
-      final parseJson = json.decode(result);
-      final tick = parseJson['tick'] as Map<String, dynamic>;
-      final List<DepthEntity> bids = (tick['bids'] as List<dynamic>)
-          .map<DepthEntity>(
-              (item) => DepthEntity(item[0] as double, item[1] as double))
-          .toList();
-      final List<DepthEntity> asks = (tick['asks'] as List<dynamic>)
-          .map<DepthEntity>(
-              (item) => DepthEntity(item[0] as double, item[1] as double))
-          .toList();
-      initDepth(bids, asks);
-    });
+    // rootBundle.loadString('assets/depth.json').then((result) {
+    //   final parseJson = json.decode(result);
+    //   final tick = parseJson['tick'] as Map<String, dynamic>;
+    //   final List<DepthEntity> bids = (tick['bids'] as List<dynamic>)
+    //       .map<DepthEntity>(
+    //           (item) => DepthEntity(item[0] as double, item[1] as double))
+    //       .toList();
+    //   final List<DepthEntity> asks = (tick['asks'] as List<dynamic>)
+    //       .map<DepthEntity>(
+    //           (item) => DepthEntity(item[0] as double, item[1] as double))
+    //       .toList();
+    //   initDepth(bids, asks);
+    // });
   }
 
   void initDepth(List<DepthEntity>? bids, List<DepthEntity>? asks) {
@@ -159,7 +159,7 @@ class _KChartState extends State<KChart> {
         }
       },
       style: TextButton.styleFrom(
-        foregroundColor:  Colors.white,
+        foregroundColor: Colors.white,
         minimumSize: const Size(88, 44),
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         shape: const RoundedRectangleBorder(
