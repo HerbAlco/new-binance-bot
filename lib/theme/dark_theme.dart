@@ -1,31 +1,37 @@
 import 'package:flutter/material.dart';
 
 class DarkTheme {
+
   static ThemeData getTheme() {
+    const primaryColor = Colors.indigo;
+    const accentColor = Colors.amber;
+
     return ThemeData(
       brightness: Brightness.dark,
-      primaryColor: Colors.blue,
-      scaffoldBackgroundColor: Colors.black,
+      primaryColor: primaryColor,
+      scaffoldBackgroundColor: Colors.grey[900],
+      colorScheme: const ColorScheme.dark(
+        primary: primaryColor,
+        secondary: accentColor,
+      ),
       textTheme: const TextTheme(
         bodyLarge: TextStyle(color: Colors.white),
         bodyMedium: TextStyle(color: Colors.white),
         bodySmall: TextStyle(color: Colors.white),
-      ).apply(
-        bodyColor: Colors.orange,
-        displayColor: Colors.blue,
       ),
       buttonTheme: const ButtonThemeData(
-        // Change as needed
-        buttonColor: Colors.blue,
+        buttonColor: primaryColor,
         textTheme: ButtonTextTheme.primary,
       ),
-      inputDecorationTheme: const InputDecorationTheme(
+      inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.blue),
+        focusedBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: primaryColor),
+          borderRadius: BorderRadius.all(Radius.circular(10)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.grey),
+          borderSide: BorderSide(color: Colors.grey[700]!),
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
         ),
       ),
     );

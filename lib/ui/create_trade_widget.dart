@@ -1,24 +1,22 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:new_binance_bot/service/get_pair_price.dart';
+import 'package:new_binance_bot/ui/k_chart_widget.dart';
 
 import '../components/app_strings.dart';
-import 'package:flutter/material.dart';
-
-import '../controllers/start_countdown.dart';
 import '../model/order_model.dart';
 import '../service/get_balance_account.dart';
-import '../service/start_order_system.dart';
-
+import 'view_order_data_widget.dart';
 
 class CreateTradeWidget extends StatefulWidget {
   const CreateTradeWidget({super.key});
+
   @override
   State<CreateTradeWidget> createState() => _CreateTradeWidgetState();
 }
 
 class _CreateTradeWidgetState extends State<CreateTradeWidget> {
-
-
-
   //cena první objednávky
   TextEditingController amountController = TextEditingController();
 
@@ -31,7 +29,6 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
   //časovač po kterém se zúžení provede
   TextEditingController setSpreadTime = TextEditingController();
 
-  CountdownManager countdownManager = CountdownManager();
   String symbol = AppStrings.tradablePairs[0];
   double orderPriceRange = 1;
   int spreadRounds = 1;
@@ -39,14 +36,22 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
   int spreadTime = 2;
   late String firstCoinSymbol;
   late String secondCoinSymbol;
-  late double firstCoinBalance = 0.0;
-  late double secondCoinBalance = 0.0;
-  final List<Order> orders = [];
+  double firstCoinBalance = 0.0;
+  double secondCoinBalance = 0.0;
+  double currentPrice = 0.0;
+  static final List<Order> orders = [];
   late Order order;
+  late final StreamController<DateTime> _dateTimeController =
+  StreamController<DateTime>();
+  late Stream<DateTime> _dateTimeStream;
 
   @override
   void initState() {
     super.initState();
+    _dateTimeStream = _dateTimeController.stream;
+    _dateTimeController.addStream(
+      Stream.periodic(const Duration(seconds: 1), (i) => DateTime.now()),
+    );
     initializeBalances();
   }
 
@@ -55,6 +60,7 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
     secondCoinSymbol = symbol.substring(symbol.indexOf('/') + 1, symbol.length);
     firstCoinBalance = await getCoinBalance(firstCoinSymbol);
     secondCoinBalance = await getCoinBalance(secondCoinSymbol);
+    currentPrice = await getCryptoPairPrice(symbol.replaceAll('/', ''));
   }
 
   @override
@@ -69,16 +75,65 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                buildAutocomplete(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Column(
+                      children: [
+                        buildDropdownButton(),
+                        Text(
+                          'Kurz páru:  ${currentPrice.toString()}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        StreamBuilder<DateTime>(
+                          stream: _dateTimeStream,
+                          builder: (context, snapshot) {
+                            // Show the current date and time
+                            if (snapshot.hasData) {
+                              return Text(
+                                DateFormat('dd.MM.yyyy HH:mm:ss')
+                                    .format(snapshot.data!),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            } else {
+                              return const Text('Loading...');
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        handleBuyButtonPressed();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ViewOrderDataWidget(orders: orders),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: const CircleBorder(),
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                  ],
+                ),
+                const KChart(),
                 const SizedBox(height: 10),
                 buildBalanceContainers(),
-                // const SizedBox(height: 10),
-                // PriceStreamWidget(
-                //   symbol: order.symbol.replaceAll('/', ''),
-                //   upperLimit: order.upperLimit,
-                //   lowerLimit: order.lowerLimit,
-                //   priceAtStart: order.priceAtStart,
-                // ), TODO: předělat aby ukazoval aktuální cenu
+                // TODO: dodělat aby ukazoval aktuální cenu
                 const SizedBox(height: 10),
                 buildTextField(
                   controller: amountController,
@@ -153,20 +208,41 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
     );
   }
 
-  Widget buildAutocomplete() {
-    return Autocomplete<String>(
-      initialValue: TextEditingValue(text: symbol),
-      optionsBuilder: (TextEditingValue textValue) {
-        return AppStrings.tradablePairs
-            .where((String value) =>
-            value.toLowerCase().startsWith(textValue.text.toLowerCase()))
-            .toList();
-      },
-      onSelected: (String selectedValue) {
-        setState(() {
-          symbol = selectedValue;
-        });
-      },
+  Widget buildDropdownButton() {
+    return Container(
+      height: 30,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: DropdownButton<String>(
+        padding: const EdgeInsets.only(left: 15),
+        value: symbol,
+        icon: const Icon(Icons.arrow_drop_down),
+        iconSize: 30,
+        elevation: 14,
+        style: const TextStyle(color: Colors.black, fontSize: 15),
+        underline: Container(
+          height: 2,
+          color: Colors.transparent,
+        ),
+        onChanged: (String? selectedSymbol) {
+          if (selectedSymbol != null) {
+            setState(() {
+              symbol = selectedSymbol;
+              initializeBalances();
+            });
+          }
+        },
+        items: AppStrings.tradablePairs.map((String option) {
+          return DropdownMenuItem<String>(
+            value: option,
+            child: Text(option, style: const TextStyle(color: Colors.white)),
+          );
+        }).toList(),
+        borderRadius: BorderRadius.circular(15),
+        dropdownColor: Colors.grey[900],
+      ),
     );
   }
 
@@ -230,62 +306,22 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
     );
   }
 
-  //TODO: předělat do view_order_data_widget
-  // Widget buildProgressBar() {
-  //   return Stack(
-  //     children: [
-  //       LinearProgressIndicator(
-  //         backgroundColor: Colors.white,
-  //         color: Colors.green,
-  //         borderRadius: BorderRadius.circular(15),
-  //         value: order.progressValue,
-  //         minHeight: 20,
-  //       ),
-  //       Positioned.fill(
-  //         child: Align(
-  //           alignment: Alignment.center,
-  //           child: Text(
-  //             order.remainingText,
-  //             style: const TextStyle(
-  //               color: Colors.black,
-  //               fontSize: 16,
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
   Widget buildButtonsRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        ElevatedButton(
-          onPressed: () {
-            handleBuyButtonPressed();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-          ),
-          child: const Text('Otevřít nákup'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            setState(() {
-              order.periodicTimer?.cancel();
-              order.spreadTimer?.cancel();
-              order.countdownTimer?.cancel();
-              cancelOpenOrders(order.clearSymbol);
-              snackBar('Obchodování bylo ukončeno.', Colors.red);
-              order.setOrderData();
-            });
-          },
-          style: ElevatedButton.styleFrom(),
-          child: const Text('Otevřený prodej'),
-        ),
-      ],
-    );
+    return ElevatedButton(
+        onPressed: () {
+          if (orders.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ViewOrderDataWidget(orders: orders),
+              ),
+            );
+          } else {
+            snackBar('Nemáš žádné obchody', Colors.red);
+          }
+        },
+        child: const Text('Obchodování'),
+      );
   }
 
   void handleBuyButtonPressed() {
@@ -295,19 +331,13 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
             Colors.red);
       } else if (spreadRounds == 0) {
         snackBar('Počet rozpětí je nízký, zadej víc než 0.', Colors.red);
-      } else if (orders.isEmpty || !order.inBuying){
-        order = Order(symbol, amount, spreadRounds, orderPriceRange, spreadTime);
+      } else {
+        order =
+            Order(symbol, amount, spreadRounds, orderPriceRange, spreadTime);
         orders.add(order);
         order.setOrderData();
         order.startPeriodicAction();
         snackBar('Obchodování bylo zapnuto.', Colors.green);
-      } else {
-        order.periodicTimer?.cancel();
-        order.spreadTimer?.cancel();
-        order.countdownTimer?.cancel();
-        cancelOpenOrders(order.clearSymbol);
-        snackBar('Obchodování bylo ukončeno.', Colors.red);
-        order.setOrderData();
       }
     });
   }

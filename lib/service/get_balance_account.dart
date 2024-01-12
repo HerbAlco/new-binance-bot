@@ -5,7 +5,7 @@ import 'service_components/generate_signature.dart';
 
 
 Future<double> getCoinBalance(String coinSymbol) async {
-  final timestamp = DateTime.now().millisecondsSinceEpoch;
+  final timestamp = DateTime.now().millisecondsSinceEpoch - 1000;
   final queryString = 'timestamp=$timestamp';
   final signature = generateSignature(queryString);
 

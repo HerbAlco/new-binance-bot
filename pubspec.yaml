@@ -40,6 +40,10 @@ dependencies:
   fluttertoast: ^8.0.7
   web_socket_channel: ^2.2.4
   quiver: ^3.0.1
+  k_chart: ^0.7.1
+  provider: ^6.1.1
+  intl: ^0.17.0
+
 
 dev_dependencies:
   flutter_test:
@@ -62,7 +66,6 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

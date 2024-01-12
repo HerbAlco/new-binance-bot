@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -30,7 +29,6 @@ class _PriceStreamWidgetState extends State<PriceStreamWidget> {
   double currentPrice = 0.0;
   double currentUpperPrice = 0.0;
   double currentLowerPrice = 0.0;
-  late Timer updateTimer;
   int decimalPlacePrice = 3;
 
   @override
@@ -56,27 +54,24 @@ class _PriceStreamWidgetState extends State<PriceStreamWidget> {
 
     channel.stream.listen((data) {
       var jsonData = json.decode(data);
-      setState(() {
-        currentPrice = double.parse(jsonData['p']);
-        decimalPlacePrice = calculateDecimalPlacePrice(currentPrice);
-        currentUpperPrice = widget.upperLimit - currentPrice;
-        currentLowerPrice = currentPrice - widget.lowerLimit;
-      });
+      if (mounted) {
+        setState(() {
+          currentPrice = double.parse(jsonData['p']);
+          decimalPlacePrice = calculateDecimalPlacePrice(currentPrice);
+          currentUpperPrice = widget.upperLimit - currentPrice;
+          currentLowerPrice = currentPrice - widget.lowerLimit;
+        });
+      }
     });
   }
 
   void _disposeWebSocket() {
-    channel.sink.close();
-  }
-
-  void _stopTimer() {
-    updateTimer.cancel();
+      channel.sink.close();
   }
 
   @override
   void dispose() {
     _disposeWebSocket();
-    _stopTimer();
     super.dispose();
   }
 
