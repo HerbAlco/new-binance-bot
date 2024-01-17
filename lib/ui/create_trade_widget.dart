@@ -199,7 +199,22 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
                   },
                 ),
                 const SizedBox(height: 10),
-                buildButtonsRow(),
+                ElevatedButton(
+                  onPressed: () {
+                    if (orders.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ViewOrderDataWidget(orders: orders),
+                        ),
+                      );
+                    } else {
+                      snackBar('Nemáš žádné obchody', Colors.red);
+                    }
+                  },
+                  child: const Text('Obchodování'),
+                ),
               ],
             ),
           ),
@@ -250,12 +265,16 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        buildBalanceContainer('Peněženka $firstCoinSymbol:', firstCoinBalance),
-        buildBalanceContainer(
-            'Peněženka $secondCoinSymbol:', secondCoinBalance),
+        Expanded(
+          child: buildBalanceContainer('Peněženka $firstCoinSymbol:', firstCoinBalance),
+        ),
+        Expanded(
+          child: buildBalanceContainer('Peněženka $secondCoinSymbol:', secondCoinBalance),
+        ),
       ],
     );
   }
+
 
   Widget buildBalanceContainer(String label, double balance) {
     return Container(
@@ -304,24 +323,6 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
         cursorColor: Colors.white,
       ),
     );
-  }
-
-  Widget buildButtonsRow() {
-    return ElevatedButton(
-        onPressed: () {
-          if (orders.isNotEmpty) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ViewOrderDataWidget(orders: orders),
-              ),
-            );
-          } else {
-            snackBar('Nemáš žádné obchody', Colors.red);
-          }
-        },
-        child: const Text('Obchodování'),
-      );
   }
 
   void handleBuyButtonPressed() {

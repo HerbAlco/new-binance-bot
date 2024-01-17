@@ -126,26 +126,53 @@ class _ViewOrderDataWidgetState extends State<ViewOrderDataWidget> {
                           )
                         ],
                       ),
-                      KChart(),
+                      const KChart(),
                       const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('zpět k vytvoření obchodu'),
-                          ),
-                        ],
+                      //TODO: dodělat pokud je pouze jedna objednávka aby se ukazovala hodnota a u druhé ne
+                      buildOrderValueContainer(currentOrder.priceAtStart + (currentOrder.priceAtStart * currentOrder.orderPriceRange), Colors.red),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: buildProgressBar(currentOrder.progressValue,
+                            currentOrder.remainingText),
                       ),
-                      buildProgressBar(currentOrder.progressValue,
-                          currentOrder.remainingText),
+                      buildOrderValueContainer(currentOrder.priceAtStart - (currentOrder.priceAtStart * currentOrder.orderPriceRange), Colors.green),
+                      Container(
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.all(5.0),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text('zpět k vytvoření obchodu'),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildOrderValueContainer(double balance, Color color) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        decoration: BoxDecoration(
+          color: color,
+          border: Border.all(
+            color: color,
+          ),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Text(
+          balance.toStringAsFixed(7),
+          style: const TextStyle(
+            fontSize: 18,
           ),
         ),
       ),
