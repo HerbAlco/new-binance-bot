@@ -62,7 +62,6 @@ class Order extends ChangeNotifier {
   void startPeriodicAction() {
     void setRestart(int newWave, String symbol, double amount,
         double orderPriceRange, double priceAtStart, Duration currentDuration) async {
-
       spreadTimer?.cancel();
       countdownTimer?.cancel();
       await startOrderSystem(
@@ -74,28 +73,31 @@ class Order extends ChangeNotifier {
 
     periodicTimer = Timer.periodic(pollingInterval, (timer1) async {
       List openOrders = await getOpenOrdersBySymbol(clearSymbol);
-      bool matchingOrder = false;
+      List openOrdersID = [];
+      bool matchingOrder = true;
+      for (var order in openOrders){
+        openOrdersID.add(order['orderId']);
+      }
+
       for (var orderID in ordersID) {
-        for (var order in openOrders){
-          if (order['orderId'] == orderID){
-            matchingOrder = true;
-            break;
-          } else {
-            matchingOrder == false;
-          }
+        if (!openOrdersID.contains(orderID)){
+          matchingOrder = false;
+          break;
         }
       }
-      if (!matchingOrder && periodicTimer!.isActive) {
+
+      if (ordersID.isEmpty || (!matchingOrder && periodicTimer!.isActive)) {
         periodicTimer?.cancel();
         priceAtStart = await getCryptoPairPrice(clearSymbol);
-        setRestart(1, symbol, amount, orderPriceRange, priceAtStart,
+        wave = 1;
+        setRestart(wave, symbol, amount, orderPriceRange, priceAtStart,
             Duration(minutes: spreadTime));
       } else if (!spreadTimer!.isActive &&
           spreadRounds > wave &&
           periodicTimer!.isActive) {
         periodicTimer?.cancel();
-        setRestart(wave++, symbol, amount / wave, orderPriceRange / wave,
-            priceAtStart, Duration(minutes: wave) + currentDuration);
+        setRestart(++wave, symbol, amount / wave, orderPriceRange / wave,
+            priceAtStart, currentDuration * wave);
       }
       setOrderData();
     });

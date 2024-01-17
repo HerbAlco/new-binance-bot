@@ -265,12 +265,16 @@ class _CreateTradeWidgetState extends State<CreateTradeWidget> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        buildBalanceContainer('Peněženka $firstCoinSymbol:', firstCoinBalance),
-        buildBalanceContainer(
-            'Peněženka $secondCoinSymbol:', secondCoinBalance),
+        Expanded(
+          child: buildBalanceContainer('Peněženka $firstCoinSymbol:', firstCoinBalance),
+        ),
+        Expanded(
+          child: buildBalanceContainer('Peněženka $secondCoinSymbol:', secondCoinBalance),
+        ),
       ],
     );
   }
+
 
   Widget buildBalanceContainer(String label, double balance) {
     return Container(

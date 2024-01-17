@@ -28,9 +28,6 @@ Future<void> startOrderSystem(
   double firstCoinBalanceUSDT = await getCryptoPairPrice('${firstCoinSymbol}USDT') * firstCoinBalance;
   double secondCoinBalanceUSDT = await getCryptoPairPrice('${secondCoinSymbol}USDT') * secondCoinBalance;
 
-  print(firstCoinBalanceUSDT);
-  print(secondCoinBalanceUSDT);
-
   final buyPrice = priceAtStart - (priceAtStart * orderPriceRange);
   final sellPrice = priceAtStart + (priceAtStart * orderPriceRange);
 
@@ -38,18 +35,18 @@ Future<void> startOrderSystem(
     await buyCryptoOnMarket(symbol, 'BUY', amount);
   } else if (currentPrice > sellPrice) {
     await buyCryptoOnMarket(
-        symbol, 'SELL', amount + amount * orderPriceRange * 100);
+        symbol, 'SELL', amount * orderPriceRange + amount);
   } else if (firstCoinBalanceUSDT < amount || secondCoinBalanceUSDT < amount){
     if (firstCoinBalanceUSDT < amount) {
       ordersID.add(await createLimitOrder(symbol, 'BUY', amount, buyPrice));
     } else {
       ordersID.add(await createLimitOrder(
-          symbol, 'SELL', amount + amount * orderPriceRange * 100, sellPrice));
+          symbol, 'SELL', amount * orderPriceRange + amount, sellPrice));
     }
   } else {
     ordersID.add(await createLimitOrder(symbol, 'BUY', amount, buyPrice));
     ordersID.add(await createLimitOrder(
-        symbol, 'SELL', amount + amount * orderPriceRange * 100, sellPrice));
+        symbol, 'SELL', amount * orderPriceRange + amount, sellPrice));
   }
 }
 
